@@ -1,5 +1,5 @@
 {
-  description = "Brainfuck interpreter in Rust";
+  description = "Game of Life (and maybe more cellular automata)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -34,7 +34,7 @@
 
       src = craneLib.cleanCargoSource (craneLib.path ./.);
 
-      bf-crate = craneLib.buildPackage {
+      gooool-crate = craneLib.buildPackage {
         inherit src;
         
         strictDeps = true;
@@ -54,10 +54,10 @@
     in 
     {
       checks = {
-        inherit bf-crate;
+        inherit gooool-crate;
       };
 
-      packages.default = bf-crate;
+      packages.default = gooool-crate;
       
       devShells = {
         default = craneLib.devShell {
