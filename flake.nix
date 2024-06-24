@@ -25,7 +25,9 @@
     let
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ (import rust-overlay) ];
+        overlays = [ 
+          (import rust-overlay)
+        ];
       };
 
       rustToolchain = pkgs.rust-bin.stable.latest.default;
@@ -47,8 +49,20 @@
           ];
         };
 
-        buildInputs = [
-          
+        LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
+
+        buildInputs = with pkgs; [
+          pkg-config
+          libGL
+          xorg.libX11
+          xorg.libXinerama
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXrandr
+        ];
+
+        nativeBuildInputs = with pkgs; [
+          cmake 
         ];
       };
     in 
@@ -62,8 +76,7 @@
       devShells = {
         default = craneLib.devShell {
           checks = self.checks.${system};
-          packages = [
-            
+          packages = with pkgs; [
           ];
         };
       };
