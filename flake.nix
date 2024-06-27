@@ -41,6 +41,8 @@
         
         strictDeps = true;
 
+        stdenv = pkgs.clangStdenv;
+
         cargoVendorDir = craneLib.vendorMultipleCargoDeps {
           inherit (craneLib.findCargoFiles src) cargoConfigs;
           cargoLockList = [
