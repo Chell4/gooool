@@ -36,7 +36,7 @@
 
       src = craneLib.cleanCargoSource (craneLib.path ./.);
 
-      gooool-crate = craneLib.buildPackage {
+      commonArgs = {
         inherit src;
         
         strictDeps = true;
@@ -52,7 +52,6 @@
         LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
 
         buildInputs = with pkgs; [
-          pkg-config
           libGL
           xorg.libX11
           xorg.libXinerama
@@ -65,6 +64,10 @@
           cmake 
         ];
       };
+
+      gooool-crate = craneLib.buildPackage (
+        commonArgs // { cargoArtifacts = craneLib.buildDepsOnly commonArgs; }
+      );
     in 
     {
       checks = {
