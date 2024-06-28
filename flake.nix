@@ -30,11 +30,27 @@
         ];
       };
 
+      rustSrc = pkgs.rust-bin.stable.latest.rust-src;
       rustToolchain = pkgs.rust-bin.stable.latest.default;
 
       craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
       src = craneLib.cleanCargoSource (craneLib.path ./.);
+
+      buildDeps = with pkgs; [
+        cmake
+        makeWrapper
+      ];
+
+
+      runtimeDeps = with pkgs; [
+        libGL
+        xorg.libX11
+        xorg.libXinerama
+        xorg.libXcursor
+        xorg.libXi
+        xorg.libXrandr
+      ];
 
       commonArgs = {
         inherit src;
@@ -51,39 +67,63 @@
           ];
         };
 
-        LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
+        LIBCLANG_PATH="${pkgs.libclang.lib}/lib";         
 
-        buildInputs = with pkgs; [
-          libGL
-          xorg.libX11
-          xorg.libXinerama
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
-        ];
-
-        nativeBuildInputs = with pkgs; [
-          cmake 
-        ];
+        buildInputs = runtimeDeps;
+        nativeBuildInputs = buildDeps;
       };
 
-      gooool-crate = craneLib.buildPackage (
-        commonArgs // { cargoArtifacts = craneLib.buildDepsOnly commonArgs; }
-      );
+      goooolCrate = craneLib.buildPackage (commonArgs // rec { 
+
+        pname = "gooool";
+
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs; 
+
+        postInstall = ''
+          wrapProgram $out/bin/${pname} \
+            --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeDeps}
+        '';
+      });
     in 
     {
       checks = {
-        inherit gooool-crate;
+        inherit goooolCrate;
       };
 
-      packages.default = gooool-crate;
-      
-      devShells = {
-        default = craneLib.devShell {
-          checks = self.checks.${system};
-          packages = with pkgs; [
-          ];
+      packages.default = goooolCrate;
+
+      apps.default = flake-utils.lib.mkApp { drv = goooolCrate; };
+
+      devShells.default = pkgs.mkShell.override { stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.clangStdenv; }
+        {
+          #checks = self.checks.${system};
+          
+          inherit (commonArgs) LIBCLANG_PATH;
+
+          RUST_SRC_PATH = rustSrc;
+
+          buildInputs = runtimeDeps;
+
+          nativeBuildInputs = buildDeps
+            ++ (with pkgs; [
+                pkg-config
+                openssl
+                rustToolchain
+            ]);
+        
+          shellHook = ''
+            mkdir -p .vscode
+
+            if [[ ! -e .vscode/settings.json ]] || [[ $(cat .vscode/settings.json | tr -d '[:space:]') == "" ]]; then
+              echo "{}" > .vscode/settings.json
+            fi
+
+            ${pkgs.jq}/bin/jq ". + { 
+                \"rust-analyzer.cargo.sysrootSrc\": \"${rustSrc}/lib/rustlib/src/rust/library/\"
+              }" \
+              < .vscode/settings.json \
+              | ${pkgs.moreutils}/bin/sponge .vscode/settings.json
+          '';
         };
-      };
     });
 }
