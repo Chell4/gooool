@@ -42,7 +42,6 @@
         makeWrapper
       ];
 
-
       runtimeDeps = with pkgs; [
         libGL
         xorg.libX11
