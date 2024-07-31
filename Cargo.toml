@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 raylib = { version = "5.0" }
+ndarray = { version = "0.15.6" }
+itertools = { version = "0.13.0" }
